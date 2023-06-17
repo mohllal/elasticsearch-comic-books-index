@@ -15,10 +15,10 @@ s.auth = (elasticsearch_username, elasticsearch_password)
 s.headers.update({"content-type": "application/json"})
 
 index_name = os.environ.get("INDEX_NAME")
-index_recreate = os.environ.get("INDEX_RECREATE", False)
+index_recreate = bool(os.environ.get("INDEX_RECREATE", False))
 
-number_of_shards = os.environ.get("NUMBER_OF_SHARDS", 1)
-number_of_replicas = os.environ.get("NUMBER_OF_REPLICAS", 1)
+number_of_shards = int(os.environ.get("NUMBER_OF_SHARDS", 1))
+number_of_replicas = int(os.environ.get("NUMBER_OF_REPLICAS", 1))
 
 logging.basicConfig(level=logging.INFO)
 
