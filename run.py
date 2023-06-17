@@ -23,22 +23,22 @@ number_of_replicas = os.environ.get("NUMBER_OF_REPLICAS", 1)
 logging.basicConfig(level=logging.INFO)
 
 
-def csv_to_json(csv_file_path: str) -> str:
+def csv_to_array() -> list:
     """
-    read a csv file and convert it to json string
+    read a csv file and convert it to array of dicts
     """
 
     data = []
 
     # read csv file
-    with open(csv_file_path, encoding="utf-8") as csv_file:
+    with open("comic_books.csv", encoding="utf-8") as csv_file:
         csv_reader = csv.DictReader(csv_file)
 
         # convert each csv row into python dict
         for row in csv_reader:
             data.append(row)
 
-    return json.dumps(data)
+    return data
 
 
 def index_exists() -> bool:
@@ -99,9 +99,33 @@ def create_index():
         logging.error(f"Error in creating index '{index_name}': {str(e)}")
 
 
-if __name__ == "__main__":
-    data = csv_to_json("comic_books.csv")
+def create_docs():
+    """
+    create elasticsearch documents in bulk
+    """
 
+    documents = csv_to_array()
+
+    bulk_data = ""
+    for item in documents:
+        bulk_data += (
+            json.dumps({"index": {"_index": index_name}}) + "\n"
+        )  # Index metadata
+        bulk_data += json.dumps(item) + "\n"  # Document data
+
+    url = f"{elasticsearch_url}/_bulk"
+    try:
+        logging.info(f"Trying to create documents for index '{index_name}'...")
+
+        r = s.post(url, data=bulk_data)
+        r.raise_for_status()
+
+        logging.info(f"Creating documents for index '{index_name}' done successfully!")
+    except HTTPError as e:
+        logging.error(f"Error in creating documents for index '{index_name}': {str(e)}")
+
+
+if __name__ == "__main__":
     # delete index if it exists
     if index_recreate and index_exists():
         delete_index()
@@ -109,3 +133,8 @@ if __name__ == "__main__":
     # create index if it doesn't exist
     if not index_exists():
         create_index()
+
+    # create documents in bulk
+    create_docs()
+
+    logging.info("Everything done! Happy Elasticsearching!")
